@@ -39,8 +39,11 @@ async def action_info(message: types.Message):
     print(all_beacons)
     #all_beacons_list = list(all_beacons.keys())
     logger.info(all_beacons[0])
-    code_obj_beacons = [Code(f"\n\n{all_beacons[id].ID}") + f"\n{all_beacons[id].Username}" for id, beacon in enumerate(all_beacons)]
-    logger.info(all_sessions[0])
+    code_obj_beacons = [Code(f"\n\n{all_beacons[id].ID}") + f"\n{all_beacons[id].Username}" + f"\n{format_time(all_beacons[id].LastCheckin)}" for id, beacon in enumerate(all_beacons)]
+    try:
+        logger.info(all_sessions[0])
+    except:
+        logger.info(f"[x] no sessions found")
     #code_ojb_sessions = [Code(f"\n\n{session}") + f"\n{all_sessions[id].Username}" for session in all_sessions]
     code_obj_sessions = [Code(f"\n\n{all_sessions[id].ID}") + f"\n{all_sessions[id].Username}" for id, session in enumerate(all_sessions)]
     info_message = Text(Bold("⚔️ all active/dead beacons ⚔️"),
