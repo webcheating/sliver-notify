@@ -62,19 +62,25 @@ async def sliver():
         current_ids = set(current_beacons.keys())
         added_ids = current_ids - old_ids
         removed_ids = old_ids - current_ids
+        #logger.error(f'added IDS: {len(added_ids)}')
+        #logger.error(f'removed IDS: {len(removed_ids)}')
         if added_ids:
             for beacon_id in added_ids:
+                logger.error(f'IDS: {added_ids}')
                 beacon = current_beacons[beacon_id]
                 await send_msg(beacon, 'add', len(current_beacons))
+                #old_beacons = current_becons
                 logger.info(f'[+] added beacon {beacon.ID}')
                 logger.info(f'[*] full beacon data: {beacon}')
         if removed_ids:
             for beacon_id in removed_ids:
+                logger.error(f'IDS: {removed_ids}')
                 beacon = old_beacons[beacon_id]
                 await send_msg(beacon, 'remove', len(current_beacons))
+                #old_beacons = current_beacons
                 logger.info(f'[x] removed beacon {beacon.ID}')
         old_beacons = current_beacons
-        await asyncio.sleep(2)
+        #await asyncio.sleep(2)
     #except asyncio.CancelledError:
     #    logger.info("[sliver] sliver task cancelled")
     #finally:
@@ -86,17 +92,6 @@ async def run_bot():
         await dp.start_polling(bot)
     except asyncio.CancelledError:
         await bot.stop_polling()
-
-async def gather(*tasks, **kwargs):
-    tasks = [ task if isinstance(task, asyncio.Task) else asyncio.create_task(task)
-              for task in tasks ]
-    try:
-        return await asyncio.gather(*tasks, **kwargs)
-    except BaseException:
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
-        raise
 
 async def main():
     #logger.warning("test1")
@@ -125,8 +120,7 @@ async def main():
     
     try:
         logger.warning("test4")
-        #await asyncio.gather(sliver_task, bot_task, return_exceptions=True)
-        await gather(sliver(), run_bot())
+        await asyncio.gather(sliver_task, bot_task, return_exceptions=True)
     except:
         logger.error("[x] fatal error")
         for i in [sliver_task, bot_task]:

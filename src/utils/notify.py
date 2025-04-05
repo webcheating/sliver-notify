@@ -43,6 +43,7 @@ async def send_msg(beacon, action, current_beacons):
             #               )   
         for chat_id in CHAT_IDS:
             try:
+                logger.error(f"send {chat_id}")
                 await bot.send_message(chat_id=chat_id, **message.as_kwargs())
             except Exception as err:
                 logging.error(f"[x] error: {err}")
