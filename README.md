@@ -54,3 +54,16 @@ logger.handlers = [handler]
 4. or test it online, u can create some test config in sliver and import it into @sliver_notify_bot (not always available)
 
 i'll add more convenient config file later, this is just a test case
+
+if you have problems with gRPC connection, use this:
+```
+git clone https://github.com/grpc/grpc
+cd grpc
+git submodule update --init
+pip install --break-system-packages -r requirements.txt
+pip uninstall --break-system-packages --yes protobuf
+pip uninstall --break-system-packages --yes grpcio-tools
+pip install --break-system-packages --no-input protobuf==3.20.*
+pip install --break-system-packages --no-input grpcio-tools
+GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=True pip install --break-system-packages --use-pep517 --no-input .
+```
