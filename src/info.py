@@ -26,20 +26,43 @@ def current_beacons(beacons, sessions):
 
 def format_time(time_to_format):
     last_checkin_dt = datetime.fromtimestamp(time_to_format, tz=timezone.utc)
-    #formated_time = last_checkin_dt.strftime('%Y-%m-%d %H:%M:%S UTC')
-    formated_time = last_checkin_dt.strftime('%Y %a %d %b %H:%M:%S UTC')
+    formated_time = last_checkin_dt.strftime('%a, %d %b %Y %H:%M:%S')
     current_time = datetime.now(timezone.utc)
     time_diff = current_time - last_checkin_dt
-    seconds_ago = int(time_diff.total_seconds())
-    final_time = f"{formated_time} ({seconds_ago}s ago)"
-    return final_time 
+    total_seconds = int(time_diff.total_seconds())
+
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+
+    ago_parts = []
+    if hours > 0:
+        ago_parts.append(f"{hours}h")
+    if minutes > 0 or hours > 0:
+        ago_parts.append(f"{minutes}m")
+    ago_parts.append(f"{seconds}s")
+
+    ago_str = " ".join(ago_parts)
+
+    final_time = f"{formated_time} ({ago_str} ago)"
+    return final_time
+
+#def format_time(time_to_format):
+#    last_checkin_dt = datetime.fromtimestamp(time_to_format, tz=timezone.utc)
+#    #formated_time = last_checkin_dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+#    formated_time = last_checkin_dt.strftime('%a, %d %b %Y %H:%M:%S')
+#    current_time = datetime.now(timezone.utc)
+#    time_diff = current_time - last_checkin_dt
+#    seconds_ago = int(time_diff.total_seconds())
+#    final_time = f"{formated_time} ({seconds_ago}s ago)"
+#    return final_time 
 
 @router.message(lambda msg: msg.text == "info")
 async def action_info(message: types.Message):
-    print(all_beacons)
+    logger.info(all_beacons)
     #all_beacons_list = list(all_beacons.keys())
     logger.info(all_beacons[0])
-    code_obj_beacons = [Code(f"\n\n{all_beacons[id].ID}") + f"\n{all_beacons[id].Username}" + f"\n{format_time(all_beacons[id].LastCheckin)}" for id, beacon in enumerate(all_beacons)]
+    code_obj_beacons = [Code(f"\n\n{all_beacons[id].ID}") + Bold(f"\n{all_beacons[id].Username}") + Code(f"\n{format_time(all_beacons[id].LastCheckin)}") for id, beacon in enumerate(all_beacons)]
     try:
         logger.info(all_sessions[0])
     except:
@@ -52,6 +75,20 @@ async def action_info(message: types.Message):
                    *code_obj_sessions,
                    Bold("\n\n🗡 enter beacon/session UUID:"))
     await message.answer(**info_message.as_kwargs())
+
+@router.message(lambda msg: msg.text == "sessions")
+async def all_sessions_info(message: types.Message):
+    logger.info(all_sessions)
+    if len(all_sessions) <= 0:
+        await message.answer("[x] no sessions found")
+    else:
+        logger.info(f'[*] session[0]: {all_sessions[0]}')
+        code_objects = [Bold(f"\n\n[{id}] ") + Code(f"{all_sessions[id].ID}") + f"\n{all_sessions[id].Username}" + Code(f"\n{format_time(all_sessions[id].LastCheckin)}") for id, session in enumerate(all_sessions)]
+
+        info_message = Text(Bold("⚔️ all active/dead sessions ⚔️"),
+                       *code_objects,
+                       Bold("\n\n🗡 enter session UUID:"))
+        await message.answer(**info_message.as_kwargs())
 
 def get_beacon_by_id(beacons, beacon_id):
     return next((beacon for beacon in beacons if beacon.ID == beacon_id), None)
@@ -100,13 +137,3 @@ async def get_beacon_info(message: types.Message):
          await message.answer(**message_text.as_kwargs(), reply_markup=reply_kb)
     else:
         await message.answer("beacon not found")
-
-@router.message(lambda msg: msg.text == "info")
-async def sessions_info(message: types.Message):
-    print(all_sessions)
-    all_beacons_list = list(all_beacons.keys())
-    code_objects = [Code(f"\n\n{beacon}") + f"\n{all_beacons[beacon].Username}" for beacon in all_beacons]
-    info_message = Text(Bold("⚔️ all active/dead beacons ⚔️"),
-                   *code_objects,
-                   Bold("\n\n🗡 enter beacon UUID:"))
-    await message.answer(**info_message.as_kwargs())

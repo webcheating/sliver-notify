@@ -4,11 +4,11 @@ from colorlog import ColoredFormatter
 from aiogram import Dispatcher
 from aiogram.utils.formatting import Text, Bold, Code
 from sliver import *
-from handlers import menu
 import config as cfg
-from handlers.utils.notify import send_msg
-from handlers.init_bot import bot
-from handlers import info
+from src.utils.notify import send_msg
+from src.init_bot import bot
+from src import info
+from src import menu
 
 TOKEN = cfg.TOKEN
 CHAT_ID = cfg.CHAT_ID
@@ -22,14 +22,7 @@ def extract_beacon_dict(beacons_list):
     return {beacon.ID: beacon for beacon in beacons_list}
 
 async def extract_all_beacons(beacons, sessions):
-    #code_objects = [Code(f"\n\n{beacon}") + f"\n{beacons[beacon].Username}" for beacon in beacons]
-    #message = Text(Bold("⚔️ all active/dead beacons ⚔️"),
-    #               *code_objects,
-    #               Bold("\n\n🩸 enter beacon UUID:"))
-    #print(f"Current beacons: {current_beacons}")
-    #print(f"beacon current: {current_beacons[1]}")
     info.current_beacons(beacons, sessions)
-    #return message
 
 async def take_shot(sessions, session):
     session = await client.interact_session(sessions[session].ID)
@@ -43,17 +36,11 @@ async def sliver():
     client = SliverClient(config)
     await client.connect()
     
-    
     old_beacons = extract_beacon_dict(await client.beacons())
-    #logger.info(f'current beacons: {len(old_beacons)}')
-    #await extract_all_beacons(old_beacons) ## beacons menu BOT
     sessions = await client.sessions()
     logger.info(f'[*] current sessions: {len(sessions)}')
-    #sessions = await client.sessions()
     beacons = await client.beacons()
     logger.info(f'[*] current beacons: {len(beacons)}')
-    #await extract_all_beacons(old_beacons)
-    #print(f"done extracting: {extract}")
     #try:
     logger.info(f'[+] fine')
     while True:
@@ -61,7 +48,6 @@ async def sliver():
             sessions = await client.sessions()
             beacons = await client.beacons()
             extract = await extract_all_beacons(beacons, sessions)
-            #logger.info(f'[*] extracted beacons: {extract}')
         except Exception as e:
             logger.error("error occured: ", e)
         #extract = await extract_all_beacons(old_beacons, sessions)
@@ -101,33 +87,57 @@ async def run_bot():
     except asyncio.CancelledError:
         await bot.stop_polling()
 
+async def gather(*tasks, **kwargs):
+    tasks = [ task if isinstance(task, asyncio.Task) else asyncio.create_task(task)
+              for task in tasks ]
+    try:
+        return await asyncio.gather(*tasks, **kwargs)
+    except BaseException:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
+
 async def main():
+    #logger.warning("test1")
     sliver_task = asyncio.create_task(sliver())
     bot_task = asyncio.create_task(run_bot())
     stop_event = asyncio.Event()
-
+    #logger.warning("test2")
     def handle_sig():
-        logger.warning("[x] force exit")
+        #logger.error("[x] force exit 3")
         stop_event.set()
 
     loop = asyncio.get_running_loop()
     loop.add_signal_handler(signal.SIGINT, handle_sig)
     loop.add_signal_handler(signal.SIGTERM, handle_sig)
-    await stop_event.wait()
+    #await stop_event.wait()
     
-    for task in [sliver_task, bot_task]:
-        task.cancel()
-        try:
-            await asyncio.wait_for(task, timeout=10)
-        except asyncio.TimeoutError:
-            logger.error(f"task {task} expired")
+    #logger.warning("test3")
+    #for task in [sliver_task, bot_task]:
+    #    task.cancel()
+    #    try:
+    #        await asyncio.wait_for(task, timeout=10)
+    #    except asyncio.TimeoutError:
+    #        logger.error(f"task {task} expired")
 
-        await bot.session.close()
-    await asyncio.gather(sliver_task, bot_task, return_exceptions=True)
+    #    await bot.session.close()
+    
+    try:
+        logger.warning("test4")
+        #await asyncio.gather(sliver_task, bot_task, return_exceptions=True)
+        await gather(sliver(), run_bot())
+    except:
+        logger.error("[x] fatal error")
+        for i in [sliver_task, bot_task]:
+            i.cancel()
+    finally:
+        logger.info("fatal error")
+        #await sleep(2)
 
 if __name__ == "__main__":
     #asyncio.run(send_message())
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.warning("[x] force exit")
+        logger.error("[x] force exit 1")

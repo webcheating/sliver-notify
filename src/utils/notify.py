@@ -1,12 +1,12 @@
 import asyncio
 import logging
 import config as cfg
-from handlers.init_bot import bot
+from src.init_bot import bot
 from aiogram.utils.formatting import Text, Bold, Code
 
 logger = cfg.logger
-CHAT_ID = cfg.CHAT_ID
-
+#CHAT_ID = cfg.CHAT_ID
+CHAT_IDS = cfg.CHAT_IDS
 async def send_msg(beacon, action, current_beacons):
     logging.warning(beacon)
     logging.warning(action)
@@ -40,8 +40,12 @@ async def send_msg(beacon, action, current_beacons):
             #               Bold("\nOS:   "), Code(beacon.OS),
             #               Bold("\nfile:   "), Code(beacon.Filename),
             #               Bold("\nactive C2: "), Code(beacon.ActiveC2)
-            #               )
-        await bot.send_message(chat_id=CHAT_ID, **message.as_kwargs())
+            #               )   
+        for chat_id in CHAT_IDS:
+            try:
+                await bot.send_message(chat_id=chat_id, **message.as_kwargs())
+            except Exception as err:
+                logging.error(f"[x] error: {err}")
     except Exception as e:
         logging.error("[x] error sending message")
 

