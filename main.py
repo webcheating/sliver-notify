@@ -41,92 +41,84 @@ async def sliver():
     logger.info(f'[*] current sessions: {len(sessions)}')
     beacons = await client.beacons()
     logger.info(f'[*] current beacons: {len(beacons)}')
-    #try:
     logger.info(f'[+] fine')
-    while True:
-        try:
-            sessions = await client.sessions()
-            beacons = await client.beacons()
-            extract = await extract_all_beacons(beacons, sessions)
-        except Exception as e:
-            logger.error("error occured: ", e)
-        #extract = await extract_all_beacons(old_beacons, sessions)
-        #try:
-        #    current_beacons = await asyncio.wait_for(client.beacons(), timeout=10)
-        #except asyncio.TimeoutError:
-        #    logger.error("[sliver] timeout expired, retrying...")
-        #    continue
-        #logger.info("fine")
-        current_beacons = extract_beacon_dict(await client.beacons())
-        old_ids = set(old_beacons.keys())
-        current_ids = set(current_beacons.keys())
-        added_ids = current_ids - old_ids
-        removed_ids = old_ids - current_ids
-        #logger.error(f'added IDS: {len(added_ids)}')
-        #logger.error(f'removed IDS: {len(removed_ids)}')
-        if added_ids:
-            for beacon_id in added_ids:
-                logger.error(f'IDS: {added_ids}')
-                beacon = current_beacons[beacon_id]
-                await send_msg(beacon, 'add', len(current_beacons))
-                #old_beacons = current_becons
-                logger.info(f'[+] added beacon {beacon.ID}')
-                logger.info(f'[*] full beacon data: {beacon}')
-        if removed_ids:
-            for beacon_id in removed_ids:
-                logger.error(f'IDS: {removed_ids}')
-                beacon = old_beacons[beacon_id]
-                await send_msg(beacon, 'remove', len(current_beacons))
-                #old_beacons = current_beacons
-                logger.info(f'[x] removed beacon {beacon.ID}')
-        old_beacons = current_beacons
-        #await asyncio.sleep(2)
-    #except asyncio.CancelledError:
-    #    logger.info("[sliver] sliver task cancelled")
+    try:
+        while True:
+            try:
+                sessions = await client.sessions()
+                beacons = await client.beacons()
+                extract = await extract_all_beacons(beacons, sessions)
+            except Exception as e:
+                logger.error(f"error occured: {e}")
+            #extract = await extract_all_beacons(old_beacons, sessions)
+            #try:
+            #    current_beacons = await asyncio.wait_for(client.beacons(), timeout=10)
+            #except asyncio.TimeoutError:
+            #    logger.error("[sliver] timeout expired, retrying...")
+            #    continue
+            #logger.info("fine")
+
+            #current_beacons = extract_beacon_dict(await client.beacons())
+            try:
+                current_beacons = extract_beacon_dict(await asyncio.wait_for(client.beacons(), timeout=4))
+            except asyncio.TimeoutError:
+                logger.warning("[sliver] Timeout while polling beacons — skipping cycle")
+                continue
+            old_ids = set(old_beacons.keys())
+            current_ids = set(current_beacons.keys())
+            added_ids = current_ids - old_ids
+            removed_ids = old_ids - current_ids
+            if added_ids:
+                for beacon_id in added_ids:
+                    logger.error(f'IDS: {added_ids}')
+                    beacon = current_beacons[beacon_id]
+                    await send_msg(beacon, 'add', len(current_beacons))
+                    logger.info(f'[+] added beacon {beacon.ID}')
+                    logger.info(f'[*] full beacon data: {beacon}')
+            if removed_ids:
+                for beacon_id in removed_ids:
+                    logger.error(f'IDS: {removed_ids}')
+                    beacon = old_beacons[beacon_id]
+                    await send_msg(beacon, 'remove', len(current_beacons))
+                    logger.info(f'[x] removed beacon {beacon.ID}')
+            old_beacons = current_beacons
+    except asyncio.CancelledError:
+        logger.info("[sliver] sliver task cancelled")
+        raise
     #finally:
     #    logger.info("[sliver] stoppped")
 
 async def run_bot():
-    #await dp.start_polling(bot)
     try:
-        await dp.start_polling(bot)
+        logger.info("[*] starting bot...")
+        await dp.start_polling(bot, handle_signals=False)
     except asyncio.CancelledError:
-        await bot.stop_polling()
+        logger.warning("[bot] CancelledError received")
+        #await dp.stop_polling()
+        await bot.session.close()
+        raise
 
 async def main():
-    #logger.warning("test1")
-    sliver_task = asyncio.create_task(sliver())
-    bot_task = asyncio.create_task(run_bot())
-    stop_event = asyncio.Event()
-    #logger.warning("test2")
-    def handle_sig():
-        #logger.error("[x] force exit 3")
-        stop_event.set()
-
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.SIGINT, handle_sig)
-    loop.add_signal_handler(signal.SIGTERM, handle_sig)
-    #await stop_event.wait()
-    
-    #logger.warning("test3")
-    #for task in [sliver_task, bot_task]:
-    #    task.cancel()
-    #    try:
-    #        await asyncio.wait_for(task, timeout=10)
-    #    except asyncio.TimeoutError:
-    #        logger.error(f"task {task} expired")
-
-    #    await bot.session.close()
+    #sliver_task = asyncio.create_task(sliver())
+    sliver_task = asyncio.create_task(sliver(), name="sliver")
+    #bot_task = asyncio.create_task(run_bot())
+    bot_task = asyncio.create_task(run_bot(), name="bot")
+    tasks = [bot_task, sliver_task]
     
     try:
-        logger.warning("test4")
-        await asyncio.gather(sliver_task, bot_task, return_exceptions=True)
-    except:
+        logger.info("[*] starting tasks...")
+        await asyncio.gather(*tasks, return_exceptions=False)
+        #await asyncio.gather(bot_task, sliver_task, return_exceptions=True)
+    except asyncio.CancelledError:
         logger.error("[x] fatal error")
-        for i in [sliver_task, bot_task]:
-            i.cancel()
+        for task in tasks:
+            task.cancel()
+        #await asyncio.gather(*tasks, return_exceptions=False)
+        #await asyncio.gather(*tasks, return_exceptions=True)
+        #for i in [sliver_task, bot_task]:
+        #    i.cancel()
     finally:
-        logger.info("fatal error")
+        logger.error("[x] fatal error")
         #await sleep(2)
 
 if __name__ == "__main__":

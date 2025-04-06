@@ -83,7 +83,7 @@ async def all_sessions_info(message: types.Message):
         await message.answer("[x] no sessions found")
     else:
         logger.info(f'[*] session[0]: {all_sessions[0]}')
-        code_objects = [Bold(f"\n\n[{id}] ") + Code(f"{all_sessions[id].ID}") + f"\n{all_sessions[id].Username}" + Code(f"\n{format_time(all_sessions[id].LastCheckin)}") for id, session in enumerate(all_sessions)]
+        code_objects = [Bold(f"\n\n[{id}] ") + Code(f"{all_sessions[id].ID}") + Bold(f"\n{all_sessions[id].Username}") + Code(f"\n{format_time(all_sessions[id].LastCheckin)}") for id, session in enumerate(all_sessions)]
 
         info_message = Text(Bold("⚔️ all active/dead sessions ⚔️"),
                        *code_objects,
