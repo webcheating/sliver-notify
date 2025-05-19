@@ -57,11 +57,11 @@ i'll add more convenient config file later, this is just a test case
 
 currently available commands:   
 ```
-info -- display all sessions and beacons
+info                                   -- display all sessions and beacons
                                 
-whoami {id} (eg, whoami 1, whoami 2) -- basic whoami
+whoami {id} (eg, whoami 1, whoami 2)   -- basic whoami
                                 
-take {id} (eg, take 1, take 2) -- screenshot
+take {id} (eg, take 1, take 2)         -- screenshot
                                 
 {beacon_UUID_or_session_UUID} (eg, 19019dc2-8728-4a3a-ae08-ef3f6d994760) -- beacon/session detailed data
 ```
