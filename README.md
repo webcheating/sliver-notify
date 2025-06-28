@@ -1,6 +1,8 @@
 # sliver-notify
 client to send notifications of new/removed beacons, as well as some basic commands for interacting with sessions. plans to add more commands, improve display of dead beacons and generally improve the structure and code
 
+
+i'll add a normal config file later, i promise...
 1. create `config.py`
 
 2. add your token, chat_id(@userinfobot) and sliver config file to it
@@ -51,9 +53,8 @@ logger.setLevel(logging.INFO)
 logger.handlers = [handler]
 ```
 
-4. or test it online, u can create some test config in sliver and import it into @sliver_notify_bot (not always available)
+~~4. or test it online, u can create some test config in sliver and import it into @sliver_notify_bot (not always available)~~
 
-i'll add more convenient config file later, this is just a test case
 
 currently available commands:   
 ```
